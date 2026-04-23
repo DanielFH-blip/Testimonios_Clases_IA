@@ -900,11 +900,6 @@
         <strong>Siéntete libre de explorar:</strong> Puedes volver arriba y cambiar cualquier respuesta antes de enviar. Este espacio es para pensar sin presiones.
     </div>
 
-    <!-- ══════════════════════════════════════════════════════
-         APP SCRIPT: Reemplaza el valor de APP_SCRIPT_URL
-         en el bloque <script> al final del archivo con la
-         URL de tu Google Apps Script desplegado como webapp.
-    ══════════════════════════════════════════════════════ -->
     <form id="mainForm" method="POST">
 
         <div class="q-block" id="qb-0" data-q="0">
@@ -983,7 +978,6 @@
                 </label>
             </div>
 
-            <!-- Campos condicionales: nombre, empresa, cargo -->
             <div class="identity-reveal" id="identityReveal">
                 <span class="identity-eyebrow">Indícanos tus datos para el testimonio</span>
                 <div class="identity-grid">
@@ -1062,7 +1056,7 @@
    acceso: cualquier persona). Ejemplo:
    const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycb.../exec';
 ══════════════════════════════════════════════════════════ */
-const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxSg4JsKf2p-gobecV-qYNC35LOw_-T1xRPkquKfC5Ss-ZD29NRo4NhV_YihnQWt9-n/exec';
+const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby2E9ZPpEmNxZ7Q_lbYPCwmgtNmbGdP4hqnKlkN91mM1ZB_DyscjAqqSt3itLT3J-LQ/exec';
 
 /* ── OVERLAY Y EVENTOS DE BOTONES ─────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
@@ -1305,15 +1299,17 @@ form.addEventListener('submit', async (e) => {
     btn.disabled = true;
 
     try {
-        // GET con parámetros en URL: método más confiable con Google Apps Script.
-        // Requiere doGet(e) en el script (que delega a doPost).
-        const url = new URL(APP_SCRIPT_URL);
         const formData = new FormData(form);
-        for (const [key, value] of formData.entries()) {
-            url.searchParams.append(key, value);
-        }
+        const data = new URLSearchParams(formData);
 
-        await fetch(url.toString(), { mode: 'no-cors' });
+        await fetch(APP_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: data.toString()
+        });
 
         document.getElementById('survey').style.pointerEvents = 'none';
         document.getElementById('successScreen').classList.add('show');
