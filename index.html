@@ -93,7 +93,7 @@
             line-height: 1.05;
             color: #FFFFFF;
             letter-spacing: 0.02em;
-            margin-bottom: 40px;
+            margin-bottom: 24px; /* Ajuste para reducir scroll */
         }
 
         .ov-title em {
@@ -114,7 +114,7 @@
             display: inline-flex;
             align-items: center;
             gap: 16px;
-            margin: 48px 0 64px;
+            margin: 24px 0 32px; /* Ajuste para subir el botón */
             padding: 16px 28px;
             border: 1px solid rgba(255,255,255,0.08);
             border-radius: 100px;
@@ -148,6 +148,7 @@
             cursor: pointer;
             border-radius: 8px;
             transition: all 0.5s var(--ease);
+            display: block; /* Asegura que tome su propio bloque */
         }
         .ov-cta:hover {
             border-color: var(--accent);
@@ -1061,6 +1062,22 @@ const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby2E9ZPpEmNxZ7Q_
 /* ── OVERLAY Y EVENTOS DE BOTONES ─────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
 
+    // Validación: Prevenir múltiples envíos si ya respondió
+    if (localStorage.getItem('vectiva_encuesta_completada')) {
+        document.getElementById('overlay').style.display = 'none';
+        document.getElementById('survey').style.display = 'none';
+        
+        const successScreen = document.getElementById('successScreen');
+        successScreen.classList.add('show');
+        successScreen.querySelector('.success-title').innerHTML = "Ya recibimos<br>tu <em>respuesta.</em>";
+        
+        const bodyParagraphs = successScreen.querySelectorAll('.ov-body');
+        if (bodyParagraphs.length > 0) {
+            bodyParagraphs[0].innerText = "Tu feedback ya se encuentra registrado en nuestro sistema.";
+        }
+        return; // Detener la carga del resto de eventos
+    }
+
     const overlayElement = document.getElementById('overlay');
     const btnComenzar = document.getElementById('btn-comenzar');
 
@@ -1310,6 +1327,9 @@ form.addEventListener('submit', async (e) => {
             },
             body: data.toString()
         });
+
+        // Guardar marca de finalización en el navegador
+        localStorage.setItem('vectiva_encuesta_completada', 'true');
 
         document.getElementById('survey').style.pointerEvents = 'none';
         document.getElementById('successScreen').classList.add('show');
