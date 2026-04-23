@@ -988,8 +988,8 @@
                 <span class="identity-eyebrow">Indícanos tus datos para el testimonio</span>
                 <div class="identity-grid">
                     <div class="field">
-                        <label for="id_nombre">Nombre</label>
-                        <input type="text" id="id_nombre" name="id_nombre" placeholder="Tu nombre">
+                        <label for="id_nombre">Nombres y apellidos</label>
+                        <input type="text" id="id_nombre" name="id_nombre" placeholder="Tu nombre completo">
                     </div>
                     <div class="field">
                         <label for="id_empresa">Empresa</label>
@@ -1000,6 +1000,23 @@
                         <input type="text" id="id_cargo" name="id_cargo" placeholder="Tu cargo">
                     </div>
                 </div>
+                <button type="button" id="btnRetractarse" style="
+                    margin-top: 20px;
+                    background: none;
+                    border: none;
+                    color: var(--ink-muted);
+                    font-family: 'DM Sans', sans-serif;
+                    font-size: 12px;
+                    font-weight: 400;
+                    letter-spacing: 0.08em;
+                    cursor: pointer;
+                    padding: 8px 0;
+                    text-decoration: underline;
+                    text-underline-offset: 3px;
+                    transition: color 0.3s;
+                " onmouseover="this.style.color='var(--ink)'" onmouseout="this.style.color='var(--ink-muted)'">
+                    Prefiero elegir una opción diferente
+                </button>
             </div>
 
         </div>
@@ -1045,7 +1062,7 @@
    acceso: cualquier persona). Ejemplo:
    const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycb.../exec';
 ══════════════════════════════════════════════════════════ */
-const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFjBe8D3CMKc7hkMx3nbv_8nMX8h_-PuWlq6YlMzLP2PT4RXVqjSHzNXaR8ElV8alg/exec';
+const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby2E9ZPpEmNxZ7Q_lbYPCwmgtNmbGdP4hqnKlkN91mM1ZB_DyscjAqqSt3itLT3J-LQ/exec';
 
 /* ── OVERLAY Y EVENTOS DE BOTONES ─────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
@@ -1155,10 +1172,36 @@ document.querySelectorAll('input[name="testimonio"]').forEach(input => {
     input.addEventListener('change', () => {
         const reveal = document.getElementById('identityReveal');
         const fields = reveal.querySelectorAll('input');
+        const allOptions = document.querySelectorAll('input[name="testimonio"]');
+
         if (input.value === 'si_nombre_cargo') {
+            // Ocultar las otras opciones
+            allOptions.forEach(opt => {
+                if (opt !== input) {
+                    opt.closest('label').style.transition = 'opacity 0.4s, transform 0.4s';
+                    opt.closest('label').style.opacity = '0';
+                    opt.closest('label').style.pointerEvents = 'none';
+                    setTimeout(() => {
+                        opt.closest('label').style.display = 'none';
+                    }, 400);
+                }
+            });
+            // Mostrar campos y hacer scroll
             reveal.classList.add('open');
             fields.forEach(f => f.setAttribute('required', ''));
+            setTimeout(() => {
+                reveal.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 500);
         } else {
+            // Restaurar todas las opciones
+            allOptions.forEach(opt => {
+                const lbl = opt.closest('label');
+                lbl.style.display = '';
+                setTimeout(() => {
+                    lbl.style.opacity = '1';
+                    lbl.style.pointerEvents = '';
+                }, 20);
+            });
             reveal.classList.remove('open');
             fields.forEach(f => {
                 f.removeAttribute('required');
@@ -1166,6 +1209,34 @@ document.querySelectorAll('input[name="testimonio"]').forEach(input => {
             });
         }
     });
+});
+
+// Botón retractarse: desmarca la opción y restaura las tres cards
+document.getElementById('btnRetractarse').addEventListener('click', () => {
+    const reveal = document.getElementById('identityReveal');
+    const fields = reveal.querySelectorAll('input');
+    const allOptions = document.querySelectorAll('input[name="testimonio"]');
+
+    // Desmarcar radio
+    allOptions.forEach(opt => {
+        opt.checked = false;
+        const lbl = opt.closest('label');
+        lbl.style.display = '';
+        setTimeout(() => {
+            lbl.style.opacity = '1';
+            lbl.style.pointerEvents = '';
+        }, 20);
+    });
+
+    // Ocultar y limpiar campos
+    reveal.classList.remove('open');
+    fields.forEach(f => {
+        f.removeAttribute('required');
+        f.value = '';
+    });
+
+    // Scroll de vuelta a las opciones
+    document.getElementById('qb-3').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
 /* ── FORM SUBMIT & VALIDATION ─────────────────────────── */
@@ -1189,7 +1260,7 @@ function triggerBlockError(qBlock) {
     qBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-form.addEventListener('submit', (e) => {
+form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     if (isSubmitting) return;
@@ -1234,41 +1305,18 @@ form.addEventListener('submit', (e) => {
     btn.disabled = true;
 
     try {
-        // Usamos submit a iframe oculto: bypass CORS total, doPost recibe todo correctamente.
-        const iframe = document.createElement('iframe');
-        iframe.name = '_submit_frame';
-        iframe.style.display = 'none';
-        document.body.appendChild(iframe);
-
-        const hiddenForm = document.createElement('form');
-        hiddenForm.method = 'POST';
-        hiddenForm.action = APP_SCRIPT_URL;
-        hiddenForm.target = '_submit_frame';
-        hiddenForm.style.display = 'none';
-
+        // GET con parámetros en URL: método más confiable con Google Apps Script.
+        // Requiere doGet(e) en el script (que delega a doPost).
+        const url = new URL(APP_SCRIPT_URL);
         const formData = new FormData(form);
         for (const [key, value] of formData.entries()) {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = key;
-            input.value = value;
-            hiddenForm.appendChild(input);
+            url.searchParams.append(key, value);
         }
 
-        document.body.appendChild(hiddenForm);
+        await fetch(url.toString(), { mode: 'no-cors' });
 
-        // Mostramos éxito al cargar la respuesta del iframe
-        iframe.addEventListener('load', () => {
-            document.getElementById('survey').style.pointerEvents = 'none';
-            document.getElementById('successScreen').classList.add('show');
-            // Limpieza
-            setTimeout(() => {
-                document.body.removeChild(iframe);
-                document.body.removeChild(hiddenForm);
-            }, 3000);
-        });
-
-        hiddenForm.submit();
+        document.getElementById('survey').style.pointerEvents = 'none';
+        document.getElementById('successScreen').classList.add('show');
 
     } catch (error) {
         console.error('Error en el envío:', error);
